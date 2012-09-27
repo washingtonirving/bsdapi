@@ -43,6 +43,10 @@ class BsdApi:
         else:
             return self._makePOSTRequest(url, body, https)
 
+    def doRawRequest(self, api_call, api_params = {}, request_type = GET, body = None, headers = None, https = False):
+        url = self._generateRequest(api_call, api_params, https)
+        return self._makeRequest(url, request_type, body, headers, https);
+
     """
         ***** Account *****
     """
