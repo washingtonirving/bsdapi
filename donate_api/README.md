@@ -1,264 +1,348 @@
-Blue State Digital Donate API (version 1)
-=========================================
+# OFA donate API version 1
 
-The BSD donate API allows you to construct your own donation form, submit
-contributions via AJAX and get back a JSON response.
+## Response and request formats
 
-Request and Response Formats
-----------------------------
+### API Methods
 
-### Request ###
+This API currently supports two methods which is specified via the REST endpoint URLs.
 
-Requests to this API must be made with *HTTPS POST*.
+#### Charge
+This API performs a charge on the contribution passed in providing a JSON API for what normally happens through a BSD donation page. The endpoint URL is:
 
-The REST endpoint URL is:
+* `/page/cde/Api/Charge/v1`
+* `/page/cde/Contribution/Api/v1` (deprecated)
 
-    https://DOMAIN/page/cde/Contribution/Api/v1
+#### Tokenize
+This API tokenizes the contributor information and returns a raw gateway token. This token can them be used to subsequently make a charge to the original card or passed in to the `quick_donate_import` to create a Quick Donate record for a constituent.
 
-The POST params will be exactly the same as what is currently on BSD hosted
-contribution pages. All validation rules as set in the Control Panel will be run
-so be sure to create and submit all required fields.
+* `/page/cde/Api/Tokenize/v1`
 
-We can only support SSL encrypted POSTs to the above endpoint due to PCI
-requirements. Card numbers must never be sent via GET.
+### Request
 
-### Response ###
+Requests must be made with HTTPS POST.
 
-Responses will be in JSON format. JSONP is not supported for PCI and security
-reasons.
+REST endpoint URL: Varies depending on method. (See above.)
 
-API Methods
------------
+Production domain: https://donate.barackobama.com
 
-This API only supports one method. The method is processing a donation. Since
-there is only one method, you do not need to specify a method. To process a
-donation, send an HTTPS POST request to the endpoint mentioned above with the
-following arguments.
+Staging domain: https://test7.bluestatedigital.com
 
-### Arguments ###
+The POST params will be exactly the same as what is currently on BSD hosted contribution pages (e.g.: https://donate.barackobama.com/page/contribute/o2012-donate-today).
 
-* **`slug`** (required)
+We can only support SSL encrypted POSTs to the above endpoint due to PCI requirements. Card numbers must never be sent via GET.
 
-  The slug of the BSD donation form under which the donation should be
-  processed.
+### Response
 
-* **`submission_key`** (optional)
+Responses will be in JSON format. JSONP is not supported for PCI and security reasons.
 
-  A unique per page view key that the system will de-dupe on. If nothing is
-  submitted the dupe checker is disabled.
+### Arguments
 
-* **`firstname`** (required)
+To process a donation, send an HTTPS POST request to the endpoint mentioned above with the following arguments.
 
-  The user's first name.
+*GET*
 
-* **`lastname`** (required)
+**lang**
 
-  The user's last name.
+* Charge: Optional
+* Tokenize: Optional
 
-* **`addr1`** (required)
+Determines the language of the user facing messages in the response. Defualt (i.e. if not specified) is english. For spanish, the value should be "es_MX" for Mexican Spanish.
 
-  The first line of the user's billing address.
+Note: The spanish translations for all the user facing messages from the BSD donate API are stored as strings in the "dictionary fields" part of the BSD control panel. These can be accessed here: https://donate.barackobama.com/utils/blue_dictionary/admin/section.php?component=modules/contribution&section=Contribution%20Form%20Errors
 
-* **`addr2`** (optional)
 
-  The second line of the user's billing address.
+*POST*
 
-* **`city`** (required)
+**slug**
 
-  The city of the user's billing address.
+* Charge: Required
+* Tokenize: N/A
 
-* **`state_cd`** (required)
+The slug of the BSD donation form under which the donation should be processed.
 
-  The state of the user's billing address. For United States this is the two
-  letter state abbreviation, rules for international addresses vary.
+**submission_key**
 
-* **`zip`** (required/local specific)
+* Charge: Optional
+* Tokenize: N/A
 
-  The zip or postal code of the user's billing address. This is required unless
-  the local specified by the `country` and `state_cd` fields does not have a
-  post code.
+A unique per page view key that the system will de-dupe on. If nothing is submitted the dupe checker is disabled.
 
-* **`country`** (required)
+**firstname**
 
-  The two letter [ISO 3166-1 alpha-2] country code of the user's address. (US
-  for United States)
+* Charge: Required
+* Tokenize: Required
 
-[ISO 3166-1 alpha-2]: http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+The user's first name.
 
-* **`email`** (conditional)
+**lastname**
 
-  The user's email address.
+* Charge: Required
+* Tokenize: Required
 
-  If this is set to required in the BSD donation form, then it should be
-  required.
+The user's last name.
 
-* **`phone`** (conditional)
+**addr1**
 
-  The user's phone number.
+* Charge: Required
+* Tokenize: Required
 
-  If this is set to required in the BSD donation form, then it should be
-  required.
+The first line of the user's billing address.
 
-* **`amount`** (required)
+**addr2**
 
-  Because of the BSD payment processor this must be set to a value of a
-  preconfigured amount in the BSD donation form or to the value of `other`
-  and the amount must be passed as the `amount_other` argument mentioned below.
+* Charge: Optional
+* Tokenize: Optional
 
-  When using the donate API it is best practice to always set this as `other`
-  and use the `amount_other` argument (below) to specify the donation amount for
-  maximum flexibility.
+The second line of the user's billing address.
 
-* **`amount_other`** (required)
+**city**
 
-  The donation amount selected by the user. Float value to the hundredth decimal
-  point. Examples: 10.00, 20.12
+* Charge: Required
+* Tokenize: Required
 
-* **`quick_donate_populated`** (optional)
+The city of the user's billing address.
 
-  The user's temporary, encoded payment token that is returned with the BSD
-  getToken JSONP endpoint. Required if no credit card information will be
-  passed.
+**state_cd**
 
-* **`cc_number`** (required)
+* Charge: Required
+* Tokenize: Required
 
-  The user's credit card number. If using a payment token the value should be
-  the last four of the user's credit card (retrieved from the getToken BSD
-  endpoint). Otherwise it should be the full credit card number.
+The state of the user's billing address.
 
-* **`cc_type_cd`** (required)
+**zip**
 
-  The type of card from the user. If using a payment token the value should be
-  what is specified in the getToken endpoint. Otherwise it should be what the
-  user selects.
+* Charge: Required
+* Tokenize: Required
 
-* **`cc_expir_month`** (required)
+The zip or postal code of the user's billing address.
 
-  The expiration month of the user's credit card. If using a payment token the
-  value should be what is specified in the getToken endpoint. Otherwise it
-  should be what the user selects.
+**country**
 
-* **`cc_expir_year`** (required)
+* Charge: Required
+* Tokenize: Required
 
-  The expiration year of the user's credit card. If using a payment token the
-  value should be what is specified in the getToken endpoint. Otherwise it
-  should be what the user selects.
+The country of the user's address. (US)
 
-* **`employer`** (conditional)
+**email**
 
-  The user's employer.
+* Charge: Conditional
+* Tokenize: Required
 
-  If this is set to required in the BSD donation form, then it should be
-  required.
+The user's email address.
 
-* **`occupation`** (conditional)
+If this is set to required in the BSD donation form, then it should be required.
 
-  The user's occupation.
+**phone**
 
-  If this is set to required in the BSD donation form, then it should be
-  required.
+* Charge: Conditional
+* Tokenize: Required
 
-* **`source`** (optional)
+The user's phone number.
 
-  This is typically used for tracking campaign success and can be set to any
-  arbitrary comma delimited list of values.
+If this is set to required in the BSD donation form, then it should be required.
 
-* **`subsource`** (optional)
+**amount**
 
-  This is just a sub category to use similar to the source argument listed
-  above.
+* Charge: Required
+* Tokenize: N/A
 
-* **`no_reporting_url`** (optional)
+Because of the BSD payment processor this must be set to a value of "other" and the amount must be passed as the amount_other argument mentioned below. When using the donate API it is best practice to always set this as "other" and use the amount_other argument (below) to specify the donation amount.
 
-  When set to true, omits the `action_code` and `td` URL parameters from the
-  `redirect_url` in the response. These parameters contains the same tracking
-  data included in the response, but they are encoded. They are used to report
-  contributions on donation thank you page, but are sometimes not necessary for
-  the Donate API.
+**amount_other**
 
-* **`recurring_acknowledge`** (required for recurring contributions)
+* Charge: Required
+* Tokenize: N/A
 
-  To submit a recurring contribution you need to create a BSD donate page that
-  is set to type "recurring". Currently, you cannot have a recurring and
-  non-recurring BSD donate page. If POSTing to a BSD donate form slug that is a
-  recurring page, this parameter must be set to "1".
+The donation amount selected by the user. Float value to the hundredth decimal point. Examples: 10.00, 20.12
 
-* **`custom1`, `custom2`, `custom3`** (optional)
+**quick_donate_populated**
 
-  These are all fields to hold custom data. They don't do anything except hold
-  data associated with the donation in the BSD database.
+* Charge: Optional
+* Tokenize: N/A
 
-### Responses ###
+The user's temporary, encoded payment token that is returned with the BSD getToken JSONP endpoint. Required if no credit card information will be passed.
 
-The follow are possible responses from the Donate API:
+**cc_number**
 
-* **successful response**
+* Charge: Required
+* Tokenize: Required
 
-  JSON status code: 200
+The user's credit card number. If using a payment token the value should be the last four of the user's credit card (retrieved from the getToken BSD endpoint). Otherwise it should be the full credit card number.
 
-  The response will contain a JSON object with the API version number,
-  reporting data for the contribution as well as a redirect URL. The redirect URL
-  contains the page that the user should be redirected because of the successful
-  donation.
+**cc_type_cd**
 
-  When the email address used for the donation is not already associated with a
-  saved payment token and the BSD form's "enable Quick Donate enroll process"
-  setting is enabled, the response will contain a cookie header that sets the
-  required cookies for the redirect url (which in this case would be the quick
-  donate opt-in page) to function correctly.
+* Charge: Required
+* Tokenize: Required
 
-  A cookie for duplicate detection (`contribution_resubmission`) will also be
-  set on the responses for all successful contributions.
+The type of card from the user. If using a payment token the value should be what is specified in the getToken endpoint. Otherwise it should be what the user selects. Note that we have some JavaScript that does this detection automatically so the user doesn't usually see an option to select credit card type.
 
-* **missing slug error response**
+**cc_expir_month**
 
-  JSON status code: 400
+* Charge: Required
+* Tokenize: Required
 
-  This occurs when the slug is missing entirely. The response contains an API
-  version number, status ("fail"), and a failure code ("noslug"). We do not try
-  to contribute to the default contribution page in this instance as this is an
-  obvious development error.
+The expiration month of the user's credit card. If using a payment token the value should be what is specified in the getToken endpoint. Otherwise it should be what the user selects.
 
-* **invalid slug error response**
+**cc_expir_year**
 
-  JSON status code: 400
+* Charge: Required
+* Tokenize: Required
 
-  This occurs when the given slug does not exist. The response contains an API
-  version number, status ("fail"), and a failure code ("invalidslug"). We
-  currently do not try to contribute to the default contribution page, that may
-  happen in a later version of the API.
+The expiration year of the user's credit card. If using a payment token the value should be what is specified in the getToken endpoint. Otherwise it should be what the user selects.
 
-* **validation failure response**
+**employer**
 
-  JSON status code: 400
+* Charge: Conditional
+* Tokenize: Conditional
 
-  This occurs when one of the user info. arguments in the request does not
-  validate correctly. (e.g. the user's email is malformed, there was no phone
-  number when that field is required, etc.) The response contains an API version
-  number, status ("fail"), a failure code ("validation"), and an array of
-  errors.
+The user's employer.
 
-* **gateway error response**
+If this is set to required in the BSD donation form, then it should be required. For the tokenization call the setting is the same as that of the Quick Donate Enroll page.
 
-  JSON status code: 400
+Note: While you can set this to not being required in BSD, it is a legal requirement that OFA always asks for this information.
 
-  This occurs when the gateway declines the transaction. The response contains
-  an API version number, status ("fail"), a failure code ("gateway"), and a
-  `gateway_response` object that has more details passed back from the gateway
-  about the failure. That object will contain the following elements:
+**occupation**
 
-  * **status** - The status of the transaction this can be one of the following
-    values: "error", "decline", "review", or "unknown"
-  * **code** - The raw status code from the gateway for the failure
-  * **message** - The corresponding error message for the given error code
-    according to the API docs of the gateway
-  * **failed_avs** - Whether AVS (address verification) check failed
-  * **failed_cvv** - Whether CVV (card security code) check failed
+* Charge: Conditional
+* Tokenize: Conditional
 
-* **server error response**
+The user's occupation.
 
-  JSON status code: 500
+If this is set to required in the BSD donation form, then it should be required. For the tokenization call the setting is the same as that of the Quick Donate Enroll page.
 
-  This occurs when the server is unable to process the request for any reason.
-  The response contains an API version number, status ("fail"), a failure code
-  ("unhandled").
+**source_codes**
+
+* Charge: Optional
+* Tokenize: N/A
+
+You can use this argument to pass a comma separated list of source or subsource codes to the API.
+
+**no_reporting_url**
+
+* Charge: Optional
+* Tokenize: N/A
+
+When set to true, omits the td URL parameters form the success_url in the response. These parameters contains the same tracking data included in the response, but they are encoded. They are used to report contributions on donation thank you page, but are sometimes not necessary for the Donate API.
+
+**recurring_acknowledge**
+
+* Charge: Required for recurring contributions
+* Tokenize: N/A
+
+To submit a recurring contribution you need to create a BSD donate page that is set to type "recurring". Currently, you cannot have a recurring and non-recurring BSD donate page. If POSTing to a BSD donate form slug that is a recurring page, this parameter must be set to "1".
+
+**custom1, custom2, custom3**
+
+* Charge: Optional
+* Tokenize: N/A
+
+These are all fields to hold custom data. They don't do anything except hold data associated with the donation in the BSD database.
+
+**thank_you_override_url**
+
+* Charge: Optional
+* Tokenize: N/A
+
+Instead of the preconfigured thank you page action this url will be returned as the thank you redirect url when it is set. WARNING: This url is not validated by BSD in any way and is simply passed through with "td" query strings appended if applicable.
+
+---
+
+## Responses
+
+### Charge Method
+
+When the email address used for the donation is not already associated with a saved payment token and the BSD form's "enable Quick Donate enroll process" setting is enabled, the response will contain a cookie header that sets the required cookies (on .barackobama.com) for the success url (which in this case would be "Donation successful. Now, save your payment information.") to function correctly.
+
+A cookie for duplicate detection (`contribution_resubmission`) will also be set on the response from the BSD donate API, but not from teh OFA donate API. This is used internally for BSD only.
+
+**successful responses**
+
+JSON status code: 200
+
+The response will contain a JSON object with the API version number, reporting data for the contribution as well as a success URL. The success URL contains the page that the user should be redirected because of the successful donation.
+
+**paypal redirect response**
+
+JSON status code: 200
+
+This response will contain a redirect url that the API consumer must redirect the user to in order to continue the PayPal Express Checkout process. At the time of the response the transaction has not been completed and may in fact be aborted. If the transaction is successful the user will be redirected back to BSD to complete the transaction, no notification will be sent to the JSON API consumer with regard to the status of the contribution that it initiated.
+
+**missing slug error response**
+
+JSON status code: 400
+
+This occurs when the slug is missing entirely. The response contains an API version number, status ("fail"), and a failure code ("noslug"). We do not try to contribute to the default contribution page in this instance as this is an obvious development error.
+
+**invalid slug error response**
+
+JSON status code: 400
+
+This occurs when the given slug does not exist. The response contains an API version number, status ("fail"), and a failure code ("invalidslug"). We currently do not try to contribute to the default contribution page, that may happen in a later version of the API.
+
+**validation failure response**
+
+JSON status code: 400
+
+This occurs when one of the user info. arguments in the request does not validate correctly. (e.g. the user's email is malformed, there was no phone number when that field is required, etc.) The response contains an API version number, status ("fail"), a failure code ("validation"), and an array of errors.
+
+**gateway error response**
+
+JSON status code: 400
+
+This occurs when the gateway declines the transaction. The response contains an API version number, status ("fail"), a failure code ("gateway"), and a `gateway_response` object that has more details passed back from the gateway about the failure. That object will contain the following elements:
+
+*  status - The status of the transaction this can be one of the following
+   values: "error", "decline", "review", or "unknown"
+*  code - The raw status code from the gateway for the failure
+*  message - The corresponding error message for the given error code according
+   to the API docs of the gateway
+*  failed_avs - Whether AVS (address verification) check failed
+*  failed_cvv - Whether CVV (card security code) check failed
+
+**server error response**
+
+JSON status code: 500
+
+This occurs when the server is unable to process the request for any reason. The response contains an API version number, status ("fail"), a failure code ("unhandled").
+
+### Tokenize Method
+
+**successful responses**
+
+JSON status code: 200
+
+The response will contain a JSON object with the API version number, the raw gateway token, and a hash of contributor data contained within the token.
+
+**validation failure response**
+
+JSON status code: 400
+
+This occurs when one of the user info. arguments in the request does not validate correctly. (e.g. the user's email is malformed, there was no phone number when that field is required, etc.) The response contains an API version number, status ("fail"), a failure code ("validation"), and an array of errors.
+
+**validation failure response**
+
+JSON status code: 400
+
+This occurs when we are not able to tokenize the payment information provided. This is primarily due to the card being declined or being placed into the review queue. The response contains an API version number, status ("fail"), and a failure code ("notoken").
+
+---
+
+## Plans for version 2
+
+This list needs to be prioritized by OFA and estimated by BSD.
+
+1. Easier recurring payments. We'd like to have one BSD donate form accept both recurring and non-recurring payments.
+
+2. Credit card type detection on the server side.
+
+3. Unlimited custom fields
+
+4. Easier amounts (not required two fields/POST vars)
+
+5. Support for ticket fields
+
+6. Grassroots fundraising support
+
+7. Reduce BSD latency
+
+
