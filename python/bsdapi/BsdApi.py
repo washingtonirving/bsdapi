@@ -24,7 +24,7 @@ class BsdApi:
     GET = 'GET'
     POST = 'POST'
 
-    def __init__(self, apiId, apiSecret, apiHost, apiResultFactory, apiPort = 80, apiSecurePort = 443, httpUsername = None, httpPassword = None):
+    def __init__(self, apiId, apiSecret, apiHost, apiResultFactory, apiPort = 80, apiSecurePort = 443, httpUsername = None, httpPassword = None, verbose = False):
         self.__dict__.update(locals())
 
     """
@@ -424,12 +424,18 @@ class BsdApi:
                 auth_string += ":" + self.httpPassword
             headers["Authorization"] = "Basic " + base64.b64encode(auth_string.encode('utf-8')).decode('utf-8')
 
+        if self.verbose:
+            print request_type + " " + url_secure.getPathAndQuery()
+            print '\n'.join(['%s: %s' % (k, v) for k, v in headers.items()])
+            print "\n%s\n\n----\n" % http_body
+
         if http_body != None and headers != None:
             connection.request(request_type, url_secure.getPathAndQuery(), http_body, headers)
         elif headers != None:
             connection.request(request_type, url_secure.getPathAndQuery(), None, headers)
         else:
             connection.request(request_type, url_secure.getPathAndQuery())
+
         response = None
         try:
             response = connection.getresponse()
