@@ -14,7 +14,7 @@ class RequestGenerator:
         self.__dict__.update(locals())
         self.api_base   = '/page/api'
 
-    def _query_str(self, api_ts, api_params, quote=False):
+    def _query_str(self, api_params, quote=False):
         if quote:
             try:
                 urlQuoteFunc = urllib.parse.quote
@@ -23,20 +23,31 @@ class RequestGenerator:
         else:
             urlQuoteFunc = lambda x: x
 
-        api_params.extend( [('api_ver', '1'), ('api_id', self.api_id), ('api_ts', str(api_ts))] )
         return '&'.join(["%s=%s" % (k, urlQuoteFunc(v)) for k, v in api_params])
 
     def _signing_string(self, api_ts, api_call, api_params):
-        string = "\n".join([self.api_id, str(api_ts), self.api_base + api_call, self._query_str(api_ts, api_params, quote=False)])
+        string = "\n".join([
+            self.api_id,
+            api_ts,
+            self.api_base + api_call,
+            self._query_str(api_params, quote=False)
+        ])
         return hmac.new(self.api_secret.encode(), string.encode(), hashlib.sha1).hexdigest()
 
     def getUrl(self, api_call, api_params = []):
+        api_ts = str(int(time()))
+
+        #Set defaults
+        api_params.setdefault('api_ver', '1')
+        api_params.setdefault('api_id', self.api_id)
+        api_params.setdefault('api_ts', api_ts)
+
         params = sorted(api_params.items())
-        unix_ts = int(time())
-        params.append(('api_mac', self._signing_string(unix_ts, api_call, params)))
+
+        params.append(('api_mac', self._signing_string(api_ts, api_call, params)))
 
         protocol = 'https' if self.https else 'http'
-        query = self._query_str(unix_ts, params, quote=True)
+        query = self._query_str(params, quote=True)
         return URL(protocol=protocol, host=self.api_host, path=self.api_base + api_call, query=query)
 
 class TestRequestGenerator(unittest.TestCase):
